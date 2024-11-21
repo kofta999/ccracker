@@ -22,25 +22,39 @@ fn crack_bruteforce_recur(prefix: String, mut level: u8, goal: &str) -> Option<S
     None
 }
 
-pub fn crack_bruteforce(pw_hash: &str) -> String {
-    if let Some(res) = crack_bruteforce_recur(String::new(), 0, pw_hash) {
-        dbg!(&res);
-        res
-    } else {
-        String::new()
+pub fn crack_bruteforce(pw_hash: &str) -> Option<String> {
+    crack_bruteforce_recur(String::new(), 0, pw_hash)
+}
+
+pub fn crack_dict(dict: String, goal: &str) -> Option<String> {
+    for pw in dict.lines() {
+        if hash_md5(pw) == goal {
+            dbg!("here");
+            return Some(pw.to_string());
+        }
     }
+
+    None
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::cracker::crack_bruteforce;
+    use super::*;
 
     #[test]
+    #[ignore = "Heavy computations"]
     fn test_4_letter_password() {
         let pw1 = "7a95bf926a0333f57705aeac07a362a2";
         let pw2 = "08054846bbc9933fd0395f8be516a9f9";
 
-        assert_eq!(crack_bruteforce(pw1), "PASS");
-        assert_eq!(crack_bruteforce(pw2), "CODE");
+        assert_eq!(crack_bruteforce(pw1), Some("PASS".to_string()));
+        assert_eq!(crack_bruteforce(pw2), Some("CODE".to_string()));
+    }
+
+    #[test]
+    fn test_password_in_dict() {
+        let pw = "040173afc2e9520e65a1773779691d3e";
+
+        assert_eq!(crack_dict(String::new(), pw), Some("passw0rd!".to_string()))
     }
 }

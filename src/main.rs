@@ -1,3 +1,7 @@
+use ccracker::{run, Config};
+use clap::Parser;
+
 fn main() {
-    println!("Hello, world!");
+    let args = Config::parse();
+    run(args);
 }
