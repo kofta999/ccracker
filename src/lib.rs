@@ -1,13 +1,26 @@
 pub mod cracker;
 pub mod md5;
+pub mod rainbow;
+use clap::{Args, Parser, Subcommand};
+use cracker::{crack_bruteforce, crack_dict};
+use rainbow::{create_dict_table, create_n_len_table};
 use std::{fs::File, io::Read};
 
-use clap::Parser;
-use cracker::{crack_bruteforce, crack_dict};
-
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Config {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Crack(CrackArgs),
+    Rainbow(RainbowArgs),
+}
+
+#[derive(Args)]
+struct CrackArgs {
     /// The hash you want to crack
     hash: String,
 
@@ -16,21 +29,44 @@ pub struct Config {
     dict_file: Option<std::path::PathBuf>,
 }
 
+#[derive(Args)]
+struct RainbowArgs {
+    /// Length of the rainbow table password
+    #[arg(short)]
+    l: Option<u8>,
+
+    /// Path to a dictionary file to generate a rainbow table from it
+    #[arg(short, long)]
+    dict_file: Option<std::path::PathBuf>,
+}
+
 pub fn run(config: Config) {
-    let password = match config.dict_file {
-        Some(path) => {
-            let mut file = File::open(path).unwrap();
-            let mut dict = String::new();
-            file.read_to_string(&mut dict).unwrap();
-
-            crack_dict(dict, &config.hash)
+    match config.command {
+        Commands::Crack(subcommand) => {
+            if let Some(password) = match subcommand.dict_file {
+                Some(path) => {
+                    let mut file = File::open(path).unwrap();
+                    let mut dict = String::new();
+                    file.read_to_string(&mut dict).unwrap();
+                    crack_dict(dict, &subcommand.hash)
+                }
+                None => crack_bruteforce(&subcommand.hash),
+            } {
+                println!("{}", password)
+            }
         }
-
-        None => crack_bruteforce(&config.hash),
-    };
-
-    match password {
-        Some(p) => println!("{p}"),
-        None => println!("Password not found"),
+        Commands::Rainbow(subcommand) => match subcommand.dict_file {
+            Some(path) => {
+                let mut file = File::open(path).unwrap();
+                let mut dict = String::new();
+                file.read_to_string(&mut dict).unwrap();
+                create_dict_table(dict);
+            }
+            None => {
+                if let Some(n) = subcommand.l {
+                    create_n_len_table(n);
+                }
+            }
+        },
     }
 }
