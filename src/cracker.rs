@@ -1,5 +1,4 @@
 use crate::md5::hash_md5;
-
 const ASCII_CHARS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_PW_LENGTH: u8 = 4;
 
@@ -29,7 +28,6 @@ pub fn crack_bruteforce(pw_hash: &str) -> Option<String> {
 pub fn crack_dict(dict: String, goal: &str) -> Option<String> {
     for pw in dict.lines() {
         if hash_md5(pw) == goal {
-            dbg!("here");
             return Some(pw.to_string());
         }
     }
@@ -55,6 +53,9 @@ mod tests {
     fn test_password_in_dict() {
         let pw = "040173afc2e9520e65a1773779691d3e";
 
-        assert_eq!(crack_dict(String::new(), pw), Some("passw0rd!".to_string()))
+        assert_eq!(
+            crack_dict(String::from("passw0rd!"), pw),
+            Some("passw0rd!".to_string())
+        )
     }
 }
