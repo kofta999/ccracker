@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::md5::hash_md5;
 const ASCII_CHARS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_PW_LENGTH: u8 = 4;
@@ -35,6 +37,28 @@ pub fn crack_dict(dict: String, goal: &str) -> Option<String> {
     None
 }
 
+pub fn crack_rainbow(table: String, goal: &str) -> Option<String> {
+    let rainbow_table = gen_map(table);
+    if let Some(password) = rainbow_table.get(goal) {
+        return Some(password.to_owned());
+    }
+
+    None
+}
+
+fn gen_map(table: String) -> HashMap<String, String> {
+    let mut hashmap = HashMap::new();
+
+    table.lines().for_each(|s| {
+        let mut split = s.split('\t');
+        if let (Some(hash), Some(password)) = (split.next(), split.next()) {
+            hashmap.insert(hash.to_string(), password.to_string());
+        }
+    });
+
+    hashmap
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -57,5 +81,67 @@ mod tests {
             crack_dict(String::from("passw0rd!"), pw),
             Some("passw0rd!".to_string())
         )
+    }
+
+    #[test]
+    fn test_gen_table() {
+        let s = "
+e10adc3949ba59abbe56e057f20f883e	123456
+25f9e794323b453885f5181f1b624d0b	123456789
+d8578edf8458ce06fbc5bb76a58c5ca4	qwerty
+5f4dcc3b5aa765d61d8327deb882cf99	password
+";
+
+        let map = gen_map(s.to_string());
+        let expected_map = HashMap::from([
+            (
+                "d8578edf8458ce06fbc5bb76a58c5ca4".to_string(),
+                "qwerty".to_string(),
+            ),
+            (
+                "e10adc3949ba59abbe56e057f20f883e".to_string(),
+                "123456".to_string(),
+            ),
+            (
+                "5f4dcc3b5aa765d61d8327deb882cf99".to_string(),
+                "password".to_string(),
+            ),
+            (
+                "25f9e794323b453885f5181f1b624d0b".to_string(),
+                "123456789".to_string(),
+            ),
+        ]);
+
+        assert_eq!(map, expected_map);
+    }
+
+    #[test]
+    fn test_rainbow_password_exists() {
+        let s = "
+e10adc3949ba59abbe56e057f20f883e	123456
+25f9e794323b453885f5181f1b624d0b	123456789
+d8578edf8458ce06fbc5bb76a58c5ca4	qwerty
+5f4dcc3b5aa765d61d8327deb882cf99	password
+";
+
+        assert_eq!(
+            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf99"),
+            Some("password".to_string())
+        );
+    }
+
+    #[test]
+    fn test_rainbow_password_not_exists() {
+        let s = "
+e10adc3949ba59abbe56e057f20f883e	123456
+25f9e794323b453885f5181f1b624d0b	123456789
+d8578edf8458ce06fbc5bb76a58c5ca4	qwerty
+5f4dcc3b5aa765d61d8327deb882cf99	password
+";
+
+        assert_eq!(
+            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf98"),
+            None
+        );
     }
 }

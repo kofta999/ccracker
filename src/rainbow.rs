@@ -7,14 +7,14 @@ pub fn create_n_len_table(n: u8) {
     let mut file = File::create(format!("rainbow_{n}.txt")).unwrap();
 
     bruteforce(n, String::new(), 0, &mut |s| {
-        writeln!(file, "{}\t{}", s, hash_md5(s)).unwrap();
+        writeln!(file, "{}\t{}", hash_md5(s), s).unwrap();
     });
 }
 
 pub fn create_dict_table(dict: String) {
     let mut file = File::create("rainbow_dict.txt").unwrap();
     for pw in dict.lines() {
-        writeln!(file, "{}\t{}", pw, hash_md5(pw)).unwrap();
+        writeln!(file, "{}\t{}", hash_md5(pw), pw).unwrap();
     }
 }
 
