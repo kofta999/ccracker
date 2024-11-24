@@ -1,6 +1,6 @@
+use crate::hasher::md5;
 use std::collections::HashMap;
 
-use crate::md5::hash_md5;
 const ASCII_CHARS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_PW_LENGTH: u8 = 4;
 
@@ -9,7 +9,7 @@ fn crack_bruteforce_recur(prefix: String, mut level: u8, goal: &str) -> Option<S
     for c in ASCII_CHARS.chars() {
         let str = String::from(&prefix) + &c.to_string();
 
-        if hash_md5(&str) == goal {
+        if md5::hash(str.as_bytes()) == goal {
             return Some(str);
         }
 
@@ -29,7 +29,7 @@ pub fn crack_bruteforce(pw_hash: &str) -> Option<String> {
 
 pub fn crack_dict(dict: String, goal: &str) -> Option<String> {
     for pw in dict.lines() {
-        if hash_md5(pw) == goal {
+        if md5::hash(pw.as_bytes()) == goal {
             return Some(pw.to_string());
         }
     }

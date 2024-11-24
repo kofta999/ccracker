@@ -1,5 +1,5 @@
 pub mod cracker;
-pub mod md5;
+pub mod hasher;
 pub mod rainbow;
 use clap::{Args, Parser, Subcommand};
 use cracker::{crack_bruteforce, crack_dict, crack_rainbow};
