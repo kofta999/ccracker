@@ -23,7 +23,7 @@ pub struct MD5 {
 
 impl Hasher for MD5 {
     fn new() -> Self {
-        MD5 { curr: Vec::new() }
+        Self { curr: Vec::new() }
     }
 
     fn update(&mut self, input: &[u8]) {
@@ -35,72 +35,72 @@ impl Hasher for MD5 {
     }
 
     fn finalize(&mut self) -> String {
-        hash(&self.curr)
+        MD5::hash(&self.curr)
     }
-}
 
-pub fn hash(input: &[u8]) -> String {
-    let mut a0: u32 = 0x67452301;
-    let mut b0: u32 = 0xefcdab89;
-    let mut c0: u32 = 0x98badcfe;
-    let mut d0: u32 = 0x10325476;
+    fn hash(input: &[u8]) -> String {
+        let mut a0: u32 = 0x67452301;
+        let mut b0: u32 = 0xefcdab89;
+        let mut c0: u32 = 0x98badcfe;
+        let mut d0: u32 = 0x10325476;
 
-    // 1. Convert the input to a bitvec
-    let mut bitvec: BitVec<u8, Msb0> = BitVec::from_slice(input);
+        // 1. Convert the input to a bitvec
+        let mut bitvec: BitVec<u8, Msb0> = BitVec::from_slice(input);
 
-    // 2. Pad the input
-    let original_len_bits = (bitvec.len() as u64 % (2e64 as u64)).to_le_bytes();
+        // 2. Pad the input
+        let original_len_bits = (bitvec.len() as u64).to_le_bytes();
 
-    bitvec.push(true);
-    while bitvec.len() % 512 != 448 {
-        bitvec.push(false);
-    }
-    bitvec.extend(original_len_bits);
+        bitvec.push(true);
+        while bitvec.len() % 512 != 448 {
+            bitvec.push(false);
+        }
+        bitvec.extend(original_len_bits);
 
-    for block in bitvec.chunks(512) {
-        let mut words = [0u32; 16];
-        for (i, word) in words.iter_mut().enumerate() {
-            *word = block[i * 32..(i + 1) * 32].load::<u32>();
+        for block in bitvec.chunks(512) {
+            let mut words = [0u32; 16];
+            block.chunks(32).enumerate().for_each(|(i, v)| {
+                words[i] = v.load::<u32>();
+            });
+
+            let mut a = a0;
+            let mut b = b0;
+            let mut c = c0;
+            let mut d = d0;
+
+            for i in 0..64 {
+                let (f, g) = match i {
+                    0..=15 => ((b & c) | ((!b) & d), i),
+                    16..=31 => ((d & b) | ((!d) & c), (5 * i + 1) % 16),
+                    32..=47 => (b ^ c ^ d, (3 * i + 5) % 16),
+                    48..=63 => (c ^ (b | (!d)), (7 * i) % 16),
+                    _ => unreachable!(),
+                };
+
+                let temp = d;
+                d = c;
+                c = b;
+                b = b.wrapping_add(u32::rotate_left(
+                    a.wrapping_add(f).wrapping_add(K[i]).wrapping_add(words[g]),
+                    S[i],
+                ));
+                a = temp;
+            }
+
+            a0 = a0.wrapping_add(a);
+            b0 = b0.wrapping_add(b);
+            c0 = c0.wrapping_add(c);
+            d0 = d0.wrapping_add(d);
         }
 
-        let mut a = a0;
-        let mut b = b0;
-        let mut c = c0;
-        let mut d = d0;
-
-        for i in 0..64 {
-            let (f, g) = match i {
-                0..=15 => ((b & c) | ((!b) & d), i),
-                16..=31 => ((d & b) | ((!d) & c), (5 * i + 1) % 16),
-                32..=47 => (b ^ c ^ d, (3 * i + 5) % 16),
-                48..=63 => (c ^ (b | (!d)), (7 * i) % 16),
-                _ => unreachable!(),
-            };
-
-            let temp = d;
-            d = c;
-            c = b;
-            b = b.wrapping_add(u32::rotate_left(
-                a.wrapping_add(f).wrapping_add(K[i]).wrapping_add(words[g]),
-                S[i],
-            ));
-            a = temp;
-        }
-
-        a0 = a0.wrapping_add(a);
-        b0 = b0.wrapping_add(b);
-        c0 = c0.wrapping_add(c);
-        d0 = d0.wrapping_add(d);
+        // Convert a0, b0, c0, d0 to a hexadecimal string
+        format!(
+            "{:08x}{:08x}{:08x}{:08x}",
+            a0.to_be(),
+            b0.to_be(),
+            c0.to_be(),
+            d0.to_be()
+        )
     }
-
-    // Convert a0, b0, c0, d0 to a hexadecimal string
-    format!(
-        "{:08x}{:08x}{:08x}{:08x}",
-        a0.to_be(),
-        b0.to_be(),
-        c0.to_be(),
-        d0.to_be()
-    )
 }
 
 #[cfg(test)]
