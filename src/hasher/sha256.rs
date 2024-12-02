@@ -13,11 +13,11 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
-struct SHA256 {
+pub struct Sha256 {
     curr: Vec<u8>,
 }
 
-impl Hasher for SHA256 {
+impl Hasher for Sha256 {
     fn new() -> Self {
         Self { curr: Vec::new() }
     }
@@ -31,7 +31,7 @@ impl Hasher for SHA256 {
     }
 
     fn finalize(&mut self) -> String {
-        SHA256::hash(&self.curr)
+        Sha256::hash(&self.curr)
     }
 
     fn hash(input: &[u8]) -> String {
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_empty_sha256() {
-        let mut hasher = SHA256::new();
+        let mut hasher = Sha256::new();
         let hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
         hasher.update(b"");

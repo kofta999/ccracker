@@ -1,35 +1,53 @@
-use crate::hasher::{md5::MD5, Hasher};
+use crate::{
+    hasher::{md5::Md5, sha256::Sha256, Hasher},
+    HashType,
+};
 use std::collections::HashMap;
 
 const ASCII_CHARS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_PW_LENGTH: u8 = 4;
 
-fn crack_bruteforce_recur(prefix: String, mut level: u8, goal: &str) -> Option<String> {
-    level += 1;
-    for c in ASCII_CHARS.chars() {
-        let str = String::from(&prefix) + &c.to_string();
+pub fn crack_bruteforce(pw_hash: &str, hash_type: &HashType) -> Option<String> {
+    let hash = match hash_type {
+        HashType::Md5 => Md5::hash,
+        HashType::Sha256 => Sha256::hash,
+    };
 
-        if MD5::hash(str.as_bytes()) == goal {
-            return Some(str);
-        }
+    fn crack(
+        prefix: String,
+        mut level: u8,
+        goal: &str,
+        hash: fn(&[u8]) -> String,
+    ) -> Option<String> {
+        level += 1;
+        for c in ASCII_CHARS.chars() {
+            let str = String::from(&prefix) + &c.to_string();
 
-        if level < MAX_PW_LENGTH {
-            if let Some(result) = crack_bruteforce_recur(str, level, goal) {
-                return Some(result);
+            if hash(str.as_bytes()) == goal {
+                return Some(str);
+            }
+
+            if level < MAX_PW_LENGTH {
+                if let Some(result) = crack(str, level, goal, hash) {
+                    return Some(result);
+                }
             }
         }
+
+        None
     }
 
-    None
+    crack(String::new(), 0, pw_hash, hash)
 }
 
-pub fn crack_bruteforce(pw_hash: &str) -> Option<String> {
-    crack_bruteforce_recur(String::new(), 0, pw_hash)
-}
+pub fn crack_dict(dict: String, goal: &str, hash_type: &HashType) -> Option<String> {
+    let hash = match hash_type {
+        HashType::Md5 => Md5::hash,
+        HashType::Sha256 => Sha256::hash,
+    };
 
-pub fn crack_dict(dict: String, goal: &str) -> Option<String> {
     for pw in dict.lines() {
-        if MD5::hash(pw.as_bytes()) == goal {
+        if hash(pw.as_bytes()) == goal {
             return Some(pw.to_string());
         }
     }
@@ -69,8 +87,14 @@ mod tests {
         let pw1 = "7a95bf926a0333f57705aeac07a362a2";
         let pw2 = "08054846bbc9933fd0395f8be516a9f9";
 
-        assert_eq!(crack_bruteforce(pw1), Some("PASS".to_string()));
-        assert_eq!(crack_bruteforce(pw2), Some("CODE".to_string()));
+        assert_eq!(
+            crack_bruteforce(pw1, &HashType::Md5),
+            Some("PASS".to_string())
+        );
+        assert_eq!(
+            crack_bruteforce(pw2, &HashType::Md5),
+            Some("CODE".to_string())
+        );
     }
 
     #[test]
@@ -78,7 +102,7 @@ mod tests {
         let pw = "040173afc2e9520e65a1773779691d3e";
 
         assert_eq!(
-            crack_dict(String::from("passw0rd!"), pw),
+            crack_dict(String::from("passw0rd!"), pw, &HashType::Md5),
             Some("passw0rd!".to_string())
         )
     }
@@ -125,7 +149,7 @@ d8578edf8458ce06fbc5bb76a58c5ca4	qwerty
 ";
 
         assert_eq!(
-            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf99"),
+            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf99",),
             Some("password".to_string())
         );
     }
@@ -140,7 +164,7 @@ d8578edf8458ce06fbc5bb76a58c5ca4	qwerty
 ";
 
         assert_eq!(
-            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf98"),
+            crack_rainbow(s.to_string(), "5f4dcc3b5aa765d61d8327deb882cf98",),
             None
         );
     }

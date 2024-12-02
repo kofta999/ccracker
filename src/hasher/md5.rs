@@ -17,11 +17,11 @@ const K: [u32; 64] = [
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 ];
 
-pub struct MD5 {
+pub struct Md5 {
     curr: Vec<u8>,
 }
 
-impl Hasher for MD5 {
+impl Hasher for Md5 {
     fn new() -> Self {
         Self { curr: Vec::new() }
     }
@@ -35,7 +35,7 @@ impl Hasher for MD5 {
     }
 
     fn finalize(&mut self) -> String {
-        MD5::hash(&self.curr)
+        Md5::hash(&self.curr)
     }
 
     fn hash(input: &[u8]) -> String {
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn check_md5() {
-        let mut hasher = MD5::new();
+        let mut hasher = Md5::new();
         hasher.update(b"PASS");
 
         assert_eq!("7a95bf926a0333f57705aeac07a362a2", hasher.finalize());
